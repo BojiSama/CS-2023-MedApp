@@ -14,7 +14,9 @@ class _HospitalState extends State<Hospital> {
   final LatLng _center = const LatLng(0.3326, 32.5686);
 
   void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
+    setState(() {
+      mapController = controller;
+    });
   }
 
   @override
@@ -24,13 +26,23 @@ class _HospitalState extends State<Hospital> {
         title: const Text('Location'),
         elevation: 2,
       ),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(
-          target: _center,
-          zoom: 11.0,
-        ),
-        // markers: _markers.values.toSet(),
+      body: Column(
+        children: [
+          SizedBox(
+            height: 500,
+            child: GoogleMap(
+              onMapCreated: _onMapCreated,
+              initialCameraPosition: CameraPosition(
+                target: _center,
+                zoom: 11.0,
+                tilt: 0,
+                bearing: 0,
+              ),
+              // markers: _markers.values.toSet(),
+              mapType: MapType.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
