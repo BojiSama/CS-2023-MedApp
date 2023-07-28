@@ -1,39 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:med_app/pages/account_page.dart';
-import 'package:med_app/pages/calendar_page.dart';
-import 'package:med_app/pages/home_page.dart';
-import 'package:med_app/pages/message_page.dart';
-import 'package:med_app/pages/search_page.dart';
+import 'package:med_app/pages/call_help.dart';
+import 'package:med_app/pages/first_aid.dart';
+import 'package:med_app/pages/hospital.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const MedicalEmergencyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MedicalEmergencyApp extends StatelessWidget {
+  const MedicalEmergencyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Med App',
-      home: const MainPage(),
+      title: 'Medical Emergency App',
+      theme: ThemeData(
+        primarySwatch: Colors.red,
+      ),
+      home: const HomePage(),
     );
   }
 }
 
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Medical Emergency App'),
+      ),
+      body: const Pages(),
+    );
+  }
 }
 
-class _MainPageState extends State<MainPage> {
+class Pages extends StatefulWidget {
+  const Pages({super.key});
+
+  @override
+  State<Pages> createState() => _PagesState();
+}
+
+class _PagesState extends State<Pages> {
   int currentPage = 0;
   final screens = [
-    HomePage(), CalendarPage(), SearchPage(), AccountPage(), MessagePage(),
+     CallHelp(),
+    const FirstAid(),
+    const Hospital(),
   ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,64 +66,25 @@ class _MainPageState extends State<MainPage> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          // showSelectedLabels: false,
-          // showUnselectedLabels: false,
           items: [
             BottomNavigationBarItem(
-                icon: currentPage == 0
-                    ? Icon(
-                        Icons.home,
-                        color: Colors.black,
-                      )
-                    : Icon(
-                        Icons.home_outlined,
-                        color: Colors.grey.shade700,
-                      ),
-                label: "Home"),
+              icon: currentPage == 0
+                  ? const Icon(Icons.phone)
+                  : const Icon(Icons.phone_outlined),
+              label: 'Call',
+            ),
             BottomNavigationBarItem(
-                icon: currentPage == 1
-                    ? Icon(
-                        Icons.calendar_month,
-                        color: Colors.black,
-                      )
-                    : Icon(
-                        Icons.calendar_month_outlined,
-                        color: Colors.grey.shade700,
-                      ),
-                label: "Calendar"),
+              icon: currentPage == 1
+                  ? const Icon(Icons.book)
+                  : const Icon(Icons.book_online),
+              label: 'First Aid Instructions',
+            ),
             BottomNavigationBarItem(
-                icon: currentPage == 2
-                    ? Icon(
-                        Icons.search,
-                        color: Colors.black,
-                      )
-                    : Icon(
-                        Icons.search_outlined,
-                        color: Colors.grey.shade700,
-                      ),
-                label: "Search"),
-            BottomNavigationBarItem(
-                icon: currentPage == 3
-                    ? Icon(
-                        Icons.person,
-                        color: Colors.black,
-                      )
-                    : Icon(
-                        Icons.person_outlined,
-                        color: Colors.grey.shade700,
-                      ),
-                label: "Account"),
-            BottomNavigationBarItem(
-                icon: currentPage == 4
-                    ? Icon(
-                        Icons.notifications,
-                        color: Colors.black,
-                      )
-                    : Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.grey.shade700,
-                      ),
-                label: "Messages")
+              icon: currentPage == 2
+                  ? const Icon(Icons.local_hospital)
+                  : const Icon(Icons.local_hospital_outlined),
+              label: 'Nearby hospital',
+            ),
           ]),
     );
   }
