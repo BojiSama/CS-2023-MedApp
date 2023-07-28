@@ -4,7 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 _makePhoneCall() async {
   var url = Uri.parse("tel:+256782852579");
   if (await (canLaunchUrl(url))) {
-    await launchUrl(url);
+    // await launchUrl(url);
+    return;
   } else {
     throw 'cannot call $url';
   }
