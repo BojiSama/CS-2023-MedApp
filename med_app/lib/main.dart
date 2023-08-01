@@ -46,8 +46,8 @@ class Pages extends StatefulWidget {
 class _PagesState extends State<Pages> {
   int currentPage = 0;
   final screens = [
-     CallHelp(),
-    const FirstAid(),
+    CallHelp(),
+    FirstAidPage(),
     const Hospital(),
   ];
 
