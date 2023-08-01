@@ -29,7 +29,7 @@ class _HospitalState extends State<Hospital> {
       body: Column(
         children: [
           SizedBox(
-            height: 500,
+            height: 424,
             child: GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(
