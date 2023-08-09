@@ -28,7 +28,8 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace "com.example.med_app"
-    compileSdkVersion flutter.compileSdkVersion
+    // compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion 33
     ndkVersion flutter.ndkVersion
 
     compileOptions {
