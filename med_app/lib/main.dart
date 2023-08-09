@@ -1,9 +1,18 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:med_app/pages/call_help.dart';
-import 'package:med_app/pages/first_aid.dart';
-import 'package:med_app/pages/hospital.dart';
+import 'package:med_app/screens/home_screen.dart';
+import 'package:med_app/screens/welcome_screen.dart';
+import 'package:med_app/screens/registration_screen.dart';
+import 'package:med_app/screens/login_screen.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
   runApp(const MedicalEmergencyApp());
 }
 
@@ -17,75 +26,16 @@ class MedicalEmergencyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.red,
       ),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Medical Emergency App'),
-      ),
-      body: const Pages(),
-    );
-  }
-}
-
-class Pages extends StatefulWidget {
-  const Pages({super.key});
-
-  @override
-  State<Pages> createState() => _PagesState();
-}
-
-class _PagesState extends State<Pages> {
-  int currentPage = 0;
-  final screens = [
-    CallHelp(),
-    FirstAidPage(),
-    const Hospital(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: currentPage,
-        children: screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-          currentIndex: currentPage,
-          onTap: (index) {
-            setState(() {
-              currentPage = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          items: [
-            BottomNavigationBarItem(
-              icon: currentPage == 0
-                  ? const Icon(Icons.phone)
-                  : const Icon(Icons.phone_outlined),
-              label: 'Call',
-            ),
-            BottomNavigationBarItem(
-              icon: currentPage == 1
-                  ? const Icon(Icons.book)
-                  : const Icon(Icons.book_online),
-              label: 'First Aid Instructions',
-            ),
-            BottomNavigationBarItem(
-              icon: currentPage == 2
-                  ? const Icon(Icons.local_hospital)
-                  : const Icon(Icons.local_hospital_outlined),
-              label: 'Nearby hospital',
-            ),
-          ]),
+      // home: const HomePage(),
+      // home: const WelcomeScreen(),
+      // initialRoute: WelcomeScreen.id,
+      initialRoute: HomePage.id,
+      routes: {
+        WelcomeScreen.id: (context) => const WelcomeScreen(),
+        LoginScreen.id: (context) => const LoginScreen(),
+        RegistrationScreen.id: (context) => const RegistrationScreen(),
+        HomePage.id: (context) => const HomePage(),
+      },
     );
   }
 }
