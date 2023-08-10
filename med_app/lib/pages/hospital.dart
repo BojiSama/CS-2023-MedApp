@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:search_map_location/search_map_location.dart';
 import 'package:search_map_location/utils/google_search/place.dart';
 import 'location_service.dart';
+import 'package:logger/logger.dart';
 
 class Hospital extends StatefulWidget {
   const Hospital({super.key});
@@ -20,28 +21,41 @@ class _HospitalState extends State<Hospital> {
 
   TextEditingController _searchController = TextEditingController();
 
+  static const LatLng _start = LatLng(0.3326, 32.5686);
+
   static const CameraPosition _kStart = CameraPosition(
-    target: LatLng(0.3326, 32.5686),
+    target: _start,
     zoom: 14.4746,
   );
 
   Set<Marker> _markers = Set<Marker>();
-  Set<Polygon> _polygons = Set<Polygon>();
-  List<LatLng> polygonLatLng = <LatLng>[];
+  // Set<Polygon> _polygons = Set<Polygon>();
+  // List<LatLng> polygonLatLng = <LatLng>[];
+  late FocusNode searchFocusNode;
 
   @override
   void initState() {
     super.initState();
 
-    _setMarker(LatLng(0.3326, 32.5686));
+    _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
+    searchFocusNode = FocusNode();
   }
 
-  void _setMarker(LatLng point) {
+  @override
+  void dispose(){
+    searchFocusNode.dispose();
+
+    super.dispose();
+  }
+
+  void _setMarker(LatLng point, String id) {
     setState(() {
       _markers.add(
         Marker(
-          markerId: const MarkerId('marker'),
+          markerId: MarkerId(id),
           position: point,
+          infoWindow: InfoWindow(title: id),
+          icon: BitmapDescriptor.defaultMarker
         ),
       );
     });
@@ -49,65 +63,80 @@ class _HospitalState extends State<Hospital> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // backgroundColor: Colors.red[300],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  // decoration: BoxDecoration(
-                  //   border: Border.all(width: 1.0),
-                  //   borderRadius: BorderRadius.circular(32.0),
-                  // ),
-                  width: 300,
-                  child: TextFormField(
-                    controller: _searchController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration:
-                        const InputDecoration(hintText: 'search by city'),
-                    onChanged: (value) {
-                      // print(value);
-                    },
-                    textInputAction: TextInputAction.search,
+    return GestureDetector(
+      // onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        // backgroundColor: Colors.red[300],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    // decoration: BoxDecoration(
+                    //   border: Border.all(width: 1.0),
+                    //   borderRadius: BorderRadius.circular(32.0),
+                    // ),
+                    width: 300,
+                    child: TextFormField(
+                      focusNode: searchFocusNode,
+                      controller: _searchController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration:
+                          const InputDecoration(hintText: 'search by city'),
+                      onChanged: (value) {
+                        // print(value);
+                      },
+                      textInputAction: TextInputAction.search,
+                      onEditingComplete: searchFocusNode.nextFocus,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () async {
-                    final loc = await LocationService()
-                        .coordinates(_searchController.text);
-                    _goToCoord(loc);
-                  },
-                  icon: const Icon(Icons.search),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: 500.0,
-              child: GoogleMap(
-                mapType: MapType.hybrid,
-                initialCameraPosition: _kStart,
-                onMapCreated: (GoogleMapController controller) {
-                  _controller.complete(controller);
-                },
-                markers: _markers,
+                  IconButton(
+                    onPressed: () async {
+                      // final loc = await LocationService()
+                      //     .coordinates(_searchController.text);
+                      final locs = await LocationService().nearbySearchCoordinates(_searchController.text, _start);
+                      // _goToCoord(loc);
+                      searchFocusNode.nextFocus();
+                      var logger = Logger();
+                      for(int i=0; i<locs.length; i++){
+                        _setMarker(locs[i].position, locs[i].name);
+                        // logger.d(locs[i]);
+                      }
+                      // logger.d(_markers);
+                      // print(LocationService.possibleLocations.length);
+                    },
+                    icon: const Icon(Icons.search),
+                  ),
+                ],
               ),
-            ),
-            // FloatingActionButton(
-            //   onPressed: () async {
-            //     final loc = await LocationService().nextPage();
-            //     _goToCoord(loc);
-            //   },
-            // ),
-          ],
+              SizedBox(
+                height: 500.0,
+                child: GoogleMap(
+                  mapType: MapType.hybrid,
+                  initialCameraPosition: _kStart,
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
+                  markers: _markers,
+                ),
+              ),
+              // FloatingActionButton(
+              //   onPressed: () async {
+              //     final loc = await LocationService().nextPage();
+              //     _goToCoord(loc);
+              //   },
+              // ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _currentPos,
-        label: const Text('Here'),
-        icon: const Icon(Icons.location_city),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _currentPos,
+          label: const Text('Here'),
+          icon: const Icon(Icons.location_city),
+        ),
       ),
     );
   }
@@ -160,7 +189,7 @@ class _HospitalState extends State<Hospital> {
     );
     final GoogleMapController controller = await _controller.future;
     await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-    _setMarker(coord);
+    _setMarker(coord, '1001');
   }
 
   Future<void> _currentPos() async {
@@ -175,7 +204,7 @@ class _HospitalState extends State<Hospital> {
       );
       final GoogleMapController controller = await _controller.future;
       await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-      _setMarker(LatLng(pos.latitude, pos.longitude));
+      _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here');
     } catch (e) {
       print(e);
     }

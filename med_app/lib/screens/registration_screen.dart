@@ -29,13 +29,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? errorMessage = '';
   bool isLogin = true;
 
-  final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _controllerPassword = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   Future<void> signInWithEmailAndPassowrd() async {
     try {
       await Auth().signInWithEmailAndPassword(
-          email: _controllerEmail.text, password: _controllerPassword.text);
+          email: emailController.text, password: passwordController.text);
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
@@ -46,7 +46,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> createUserWithEmailAndPassowrd() async {
     try {
       await Auth().createUserWithEmailAndPassword(
-          email: _controllerEmail.text, password: _controllerPassword.text);
+          email: emailController.text, password: passwordController.text);
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
@@ -54,16 +54,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
-  Widget _entryField(String title, TextEditingController controller) {
+  Widget _entryField(
+      String title, TextEditingController controller, bool obscureText) {
     return TextField(
       controller: controller,
+      obscureText: obscureText,
+      keyboardType: TextInputType.emailAddress,
       decoration: InputDecoration(
         labelText: title,
+        border: const OutlineInputBorder(),
       ),
     );
   }
 
-  Widget _errorMessage(){
+  Widget _errorMessage() {
     return Text(errorMessage == '' ? '' : 'Humm ? $errorMessage');
   }
   // Widget _signOutButton(){
@@ -78,6 +82,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       // ),
       backgroundColor: Colors.redAccent,
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(top: 100),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
@@ -108,8 +113,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               const SizedBox(
                 height: 45.0,
               ),
-              _entryField('email', _controllerEmail),
-              _entryField('password', _controllerPassword),
+              _entryField('email', emailController, false),
+              const SizedBox(
+                height: 8.0,
+              ),
+              _entryField('password', passwordController, true),
               _errorMessage(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -118,7 +126,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   color: Colors.red[200],
                   borderRadius: BorderRadius.circular(30.0),
                   child: MaterialButton(
-                    onPressed: createUserWithEmailAndPassowrd,
+                    onPressed: (){
+                      createUserWithEmailAndPassowrd();
+                      Navigator.pushNamed(context, HomePage.id);
+                    },
                     minWidth: 200.0,
                     height: 42.0,
                     child: const Text(
