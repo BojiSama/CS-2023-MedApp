@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 // import 'package:search_map_place_updated/search_map_place_updated.dart';
 import 'package:search_map_location/search_map_location.dart';
 import 'package:search_map_location/utils/google_search/place.dart';
 import 'location_service.dart';
+import 'package:logger/logger.dart';
 
 class Hospital extends StatefulWidget {
   const Hospital({super.key});
@@ -20,28 +22,74 @@ class _HospitalState extends State<Hospital> {
 
   TextEditingController _searchController = TextEditingController();
 
+  static const LatLng _start = LatLng(0.3326, 32.5686);
+
+  LatLng _currentPostion = LatLng(0.0, 0.0);
+
   static const CameraPosition _kStart = CameraPosition(
-    target: LatLng(0.3326, 32.5686),
+    target: _start,
     zoom: 14.4746,
   );
 
-  Set<Marker> _markers = Set<Marker>();
-  Set<Polygon> _polygons = Set<Polygon>();
-  List<LatLng> polygonLatLng = <LatLng>[];
+  final Set<Marker> _markers = <Marker>{};
+  final Set<Polyline> _polylines = <Polyline>{};
+  int _polylineIdCounter = 1;
+
+  void _setPolyline(List<PointLatLng> points) {
+    final String polylineIdVal = 'polyline$_polylineIdCounter';
+    _polylineIdCounter++;
+
+    _polylines.add(Polyline(
+      polylineId: PolylineId(polylineIdVal),
+      width: 2,
+      color: Colors.blue,
+      points: points
+          .map((point) => LatLng(point.latitude, point.longitude))
+          .toList(),
+    ));
+  }
+
+  late FocusNode searchFocusNode;
 
   @override
   void initState() {
     super.initState();
 
-    _setMarker(LatLng(0.3326, 32.5686));
+    // _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
+    _myInitState();
+    searchFocusNode = FocusNode();
   }
 
-  void _setMarker(LatLng point) {
+  void _myInitState() async {
+    final currPos = await _determinePosition();
+    _currentPostion = LatLng(currPos.latitude, currPos.longitude);
+    _setMarker(_currentPostion, 'you are here', true);
+  }
+
+  @override
+  void dispose() {
+    searchFocusNode.dispose();
+
+    super.dispose();
+  }
+
+  void _setMarker(LatLng point, String id, [bool setHue = false]) {
     setState(() {
       _markers.add(
         Marker(
-          markerId: const MarkerId('marker'),
+          markerId: MarkerId(id),
           position: point,
+          infoWindow: InfoWindow(title: id),
+          icon: setHue
+              ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+              : BitmapDescriptor.defaultMarker,
+          onTap: () async {
+            var directions =
+                await LocationService().getDirections('Makerere', id);
+            _setPolyline(directions['polyline_decoded']);
+            var logger = Logger();
+            logger.d(_polylines);
+          },
         ),
       );
     });
@@ -49,65 +97,85 @@ class _HospitalState extends State<Hospital> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // backgroundColor: Colors.red[300],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  // decoration: BoxDecoration(
-                  //   border: Border.all(width: 1.0),
-                  //   borderRadius: BorderRadius.circular(32.0),
-                  // ),
-                  width: 300,
-                  child: TextFormField(
-                    controller: _searchController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration:
-                        const InputDecoration(hintText: 'search by city'),
-                    onChanged: (value) {
-                      // print(value);
-                    },
-                    textInputAction: TextInputAction.search,
+    return GestureDetector(
+      // onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        // backgroundColor: Colors.red[300],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    // decoration: BoxDecoration(
+                    //   border: Border.all(width: 1.0),
+                    //   borderRadius: BorderRadius.circular(32.0),
+                    // ),
+                    width: 300,
+                    child: TextFormField(
+                      focusNode: searchFocusNode,
+                      controller: _searchController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration:
+                          const InputDecoration(hintText: 'search by hospital'),
+                      onChanged: (value) {
+                        // print(value);
+                      },
+                      textInputAction: TextInputAction.search,
+                      onEditingComplete: searchFocusNode.nextFocus,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () async {
-                    final loc = await LocationService()
-                        .coordinates(_searchController.text);
-                    _goToCoord(loc);
-                  },
-                  icon: const Icon(Icons.search),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: 500.0,
-              child: GoogleMap(
-                mapType: MapType.hybrid,
-                initialCameraPosition: _kStart,
-                onMapCreated: (GoogleMapController controller) {
-                  _controller.complete(controller);
-                },
-                markers: _markers,
+                  IconButton(
+                    onPressed: () async {
+                      _markers.clear();
+
+                      final currPos = await _determinePosition();
+                      _currentPostion =
+                          LatLng(currPos.latitude, currPos.longitude);
+                      _setMarker(_currentPostion, 'you are here', true);
+
+                      final locs = await LocationService()
+                          .nearbySearchCoordinates(
+                              _searchController.text, _currentPostion);
+                      searchFocusNode.nextFocus();
+                      // var logger = Logger();
+                      for (int i = 0; i < locs.length; i++) {
+                        _setMarker(locs[i].position, locs[i].name);
+                        // logger.d(locs[i]);
+                      }
+                    },
+                    icon: const Icon(Icons.search),
+                  ),
+                ],
               ),
-            ),
-            // FloatingActionButton(
-            //   onPressed: () async {
-            //     final loc = await LocationService().nextPage();
-            //     _goToCoord(loc);
-            //   },
-            // ),
-          ],
+              SizedBox(
+                height: 500.0,
+                child: GoogleMap(
+                  mapType: MapType.normal,
+                  initialCameraPosition: _kStart,
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
+                  markers: _markers,
+                  polylines: _polylines,
+                ),
+              ),
+              // FloatingActionButton(
+              //   onPressed: () async {
+              //     final loc = await LocationService().nextPage();
+              //     _goToCoord(loc);
+              //   },
+              // ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _currentPos,
-        label: const Text('Here'),
-        icon: const Icon(Icons.location_city),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _currentPos,
+          label: const Text('Here'),
+          icon: const Icon(Icons.location_city),
+        ),
       ),
     );
   }
@@ -160,7 +228,7 @@ class _HospitalState extends State<Hospital> {
     );
     final GoogleMapController controller = await _controller.future;
     await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-    _setMarker(coord);
+    _setMarker(coord, '1001');
   }
 
   Future<void> _currentPos() async {
@@ -175,7 +243,7 @@ class _HospitalState extends State<Hospital> {
       );
       final GoogleMapController controller = await _controller.future;
       await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-      _setMarker(LatLng(pos.latitude, pos.longitude));
+      _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here');
     } catch (e) {
       print(e);
     }
