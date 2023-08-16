@@ -100,10 +100,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.red[200],
                   borderRadius: BorderRadius.circular(30.0),
                   child: MaterialButton(
-                    onPressed: () {
+                    onPressed: () async {
                       // Auth().signInWithEmailAndPassword(email: emailController.text, password: passwordController.text);
-                      signInWithEmailAndPassowrd();
-                      Navigator.pushNamed(context, HomePage.id);
+                      await signInWithEmailAndPassowrd();
+                      if(errorMessage == ''){
+                        // ignore: use_build_context_synchronously
+                        Navigator.pushNamed(context, HomePage.id);
+                      }
+                      else {
+                        // Navigator.pop(context);
+                      }
                     },
                     minWidth: 200.0,
                     height: 42.0,

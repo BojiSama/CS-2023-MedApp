@@ -128,7 +128,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: MaterialButton(
                     onPressed: (){
                       createUserWithEmailAndPassowrd();
-                      Navigator.pushNamed(context, HomePage.id);
+                      // Navigator.pushNamed(context, HomePage.id);
+                      Navigator.pop(context);
                     },
                     minWidth: 200.0,
                     height: 42.0,

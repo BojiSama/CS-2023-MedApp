@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 // import 'package:search_map_place_updated/search_map_place_updated.dart';
 import 'package:search_map_location/search_map_location.dart';
 import 'package:search_map_location/utils/google_search/place.dart';
@@ -23,39 +24,72 @@ class _HospitalState extends State<Hospital> {
 
   static const LatLng _start = LatLng(0.3326, 32.5686);
 
+  LatLng _currentPostion = LatLng(0.0, 0.0);
+
   static const CameraPosition _kStart = CameraPosition(
     target: _start,
     zoom: 14.4746,
   );
 
-  Set<Marker> _markers = Set<Marker>();
-  // Set<Polygon> _polygons = Set<Polygon>();
-  // List<LatLng> polygonLatLng = <LatLng>[];
+  final Set<Marker> _markers = <Marker>{};
+  final Set<Polyline> _polylines = <Polyline>{};
+  int _polylineIdCounter = 1;
+
+  void _setPolyline(List<PointLatLng> points) {
+    final String polylineIdVal = 'polyline$_polylineIdCounter';
+    _polylineIdCounter++;
+
+    _polylines.add(Polyline(
+      polylineId: PolylineId(polylineIdVal),
+      width: 2,
+      color: Colors.blue,
+      points: points
+          .map((point) => LatLng(point.latitude, point.longitude))
+          .toList(),
+    ));
+  }
+
   late FocusNode searchFocusNode;
 
   @override
   void initState() {
     super.initState();
 
-    _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
+    // _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
+    _myInitState();
     searchFocusNode = FocusNode();
   }
 
+  void _myInitState() async {
+    final currPos = await _determinePosition();
+    _currentPostion = LatLng(currPos.latitude, currPos.longitude);
+    _setMarker(_currentPostion, 'you are here', true);
+  }
+
   @override
-  void dispose(){
+  void dispose() {
     searchFocusNode.dispose();
 
     super.dispose();
   }
 
-  void _setMarker(LatLng point, String id) {
+  void _setMarker(LatLng point, String id, [bool setHue = false]) {
     setState(() {
       _markers.add(
         Marker(
           markerId: MarkerId(id),
           position: point,
           infoWindow: InfoWindow(title: id),
-          icon: BitmapDescriptor.defaultMarker
+          icon: setHue
+              ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+              : BitmapDescriptor.defaultMarker,
+          onTap: () async {
+            var directions =
+                await LocationService().getDirections('Makerere', id);
+            _setPolyline(directions['polyline_decoded']);
+            var logger = Logger();
+            logger.d(_polylines);
+          },
         ),
       );
     });
@@ -74,7 +108,7 @@ class _HospitalState extends State<Hospital> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
+                  SizedBox(
                     // decoration: BoxDecoration(
                     //   border: Border.all(width: 1.0),
                     //   borderRadius: BorderRadius.circular(32.0),
@@ -85,7 +119,7 @@ class _HospitalState extends State<Hospital> {
                       controller: _searchController,
                       textCapitalization: TextCapitalization.words,
                       decoration:
-                          const InputDecoration(hintText: 'search by city'),
+                          const InputDecoration(hintText: 'search by hospital'),
                       onChanged: (value) {
                         // print(value);
                       },
@@ -95,18 +129,22 @@ class _HospitalState extends State<Hospital> {
                   ),
                   IconButton(
                     onPressed: () async {
-                      // final loc = await LocationService()
-                      //     .coordinates(_searchController.text);
-                      final locs = await LocationService().nearbySearchCoordinates(_searchController.text, _start);
-                      // _goToCoord(loc);
+                      _markers.clear();
+
+                      final currPos = await _determinePosition();
+                      _currentPostion =
+                          LatLng(currPos.latitude, currPos.longitude);
+                      _setMarker(_currentPostion, 'you are here', true);
+
+                      final locs = await LocationService()
+                          .nearbySearchCoordinates(
+                              _searchController.text, _currentPostion);
                       searchFocusNode.nextFocus();
-                      var logger = Logger();
-                      for(int i=0; i<locs.length; i++){
+                      // var logger = Logger();
+                      for (int i = 0; i < locs.length; i++) {
                         _setMarker(locs[i].position, locs[i].name);
                         // logger.d(locs[i]);
                       }
-                      // logger.d(_markers);
-                      // print(LocationService.possibleLocations.length);
                     },
                     icon: const Icon(Icons.search),
                   ),
@@ -115,12 +153,13 @@ class _HospitalState extends State<Hospital> {
               SizedBox(
                 height: 500.0,
                 child: GoogleMap(
-                  mapType: MapType.hybrid,
+                  mapType: MapType.normal,
                   initialCameraPosition: _kStart,
                   onMapCreated: (GoogleMapController controller) {
                     _controller.complete(controller);
                   },
                   markers: _markers,
+                  polylines: _polylines,
                 ),
               ),
               // FloatingActionButton(
