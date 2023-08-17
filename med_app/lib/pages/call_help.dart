@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
+import 'package:contacts_service/contacts_service.dart';
 
 // class CallHelp extends StatefulWidget {
 //   const CallHelp({super.key});
@@ -43,14 +46,76 @@ class _CallHelpState extends State<CallHelp> {
 
   @override
   Widget build(BuildContext context) {
+    List<Contact>? _contacts;
+
+    Future<void> refreshContacts() async {
+      var contacts = await ContactsService.getContacts(
+        withThumbnails: false,
+        // iOSLocalizedLabels: iOSLocalizedLabels,
+      );
+
+      setState(() {
+        _contacts = contacts;
+      });
+
+      for (final contact in contacts) {
+        ContactsService.getAvatar(contact).then((avatar) {
+          if (avatar == null) return; // Don't redraw if no change.
+          setState(() => contact.avatar = avatar);
+        });
+      }
+    }
+
+    @override
+    void initState() {
+      super.initState();
+      refreshContacts();
+    }
+
+    _openContactForm() async {
+      try {
+        var _ = await ContactsService.openContactForm();
+        refreshContacts();
+      } on FormOperationException catch (e) {
+        switch (e.errorCode) {
+          case FormOperationErrorCode.FORM_OPERATION_CANCELED:
+          case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
+          case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
+          default:
+            print(e.errorCode);
+        }
+      }
+    }
+
     return Scaffold(
       // appBar: AppBar(
       //   title: const Text('Call for Help'),
       // ),
       body: Center(
-        child: buildButton(),
+        // child: buildButton(),
+        child: SafeArea(
+            child: _contacts != null
+                ? ListView.builder(
+                    itemCount: _contacts?.length ?? 0,
+                    itemBuilder: (BuildContext context, int index) {
+                      Contact? c = _contacts?.elementAt(index);
+                      return ListTile(
+                        onTap: () {},
+                        leading: (c?.avatar != null && c?.avatar?.isNotEmpty != null)
+                            ? CircleAvatar(
+                                backgroundImage: MemoryImage(c?.avatar ?? Uint8List(0)))
+                            : CircleAvatar(child: Text(c?.initials() ?? '')),
+                      );
+                    })
+                : Center(child: const CircularProgressIndicator(),)),
       ),
     );
+  }
+
+  Future<List<Contact>> _getContacts() async {
+    List<Contact> contacts = await ContactsService.getContacts();
+
+    return contacts;
   }
 
   Widget buildButton() {
