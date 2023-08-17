@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
-import 'package:contacts_service/contacts_service.dart';
-
+import 'package:fast_contacts/fast_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 // class CallHelp extends StatefulWidget {
 //   const CallHelp({super.key});
 
@@ -39,82 +40,88 @@ class CallHelp extends StatefulWidget {
 }
 
 class _CallHelpState extends State<CallHelp> {
-  // final List<Contact> _contacts = [
-  //   Contact(name: 'Nearest Hospital', phone: '111'),
-  //   Contact(name: 'General Emergency Hotline', phone: '911'),
-  // ];
+  String? _status;
 
   @override
   Widget build(BuildContext context) {
-    List<Contact>? _contacts;
-
-    Future<void> refreshContacts() async {
-      var contacts = await ContactsService.getContacts(
-        withThumbnails: false,
-        // iOSLocalizedLabels: iOSLocalizedLabels,
-      );
-
-      setState(() {
-        _contacts = contacts;
-      });
-
-      for (final contact in contacts) {
-        ContactsService.getAvatar(contact).then((avatar) {
-          if (avatar == null) return; // Don't redraw if no change.
-          setState(() => contact.avatar = avatar);
-        });
-      }
-    }
-
-    @override
-    void initState() {
-      super.initState();
-      refreshContacts();
-    }
-
-    _openContactForm() async {
-      try {
-        var _ = await ContactsService.openContactForm();
-        refreshContacts();
-      } on FormOperationException catch (e) {
-        switch (e.errorCode) {
-          case FormOperationErrorCode.FORM_OPERATION_CANCELED:
-          case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
-          case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
-          default:
-            print(e.errorCode);
-        }
-      }
-    }
-
     return Scaffold(
       // appBar: AppBar(
       //   title: const Text('Call for Help'),
       // ),
-      body: Center(
-        // child: buildButton(),
-        child: SafeArea(
-            child: _contacts != null
-                ? ListView.builder(
-                    itemCount: _contacts?.length ?? 0,
-                    itemBuilder: (BuildContext context, int index) {
-                      Contact? c = _contacts?.elementAt(index);
-                      return ListTile(
-                        onTap: () {},
-                        leading: (c?.avatar != null && c?.avatar?.isNotEmpty != null)
-                            ? CircleAvatar(
-                                backgroundImage: MemoryImage(c?.avatar ?? Uint8List(0)))
-                            : CircleAvatar(child: Text(c?.initials() ?? '')),
-                      );
-                    })
-                : Center(child: const CircularProgressIndicator(),)),
+      body: Container(
+        height: double.infinity,
+        child: FutureBuilder(
+          future: getContacts(),
+          builder: (context, AsyncSnapshot snapshot) {
+            if (snapshot.data == null) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            return ListView.builder(
+              itemCount: snapshot.data.length,
+              itemBuilder: (context, index) {
+                Contact contact = snapshot.data[index];
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: const CircleAvatar(
+                        radius: 20.0,
+                        child: Icon(Icons.person),
+                      ),
+                      title: Text(contact.displayName),
+                      subtitle: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(contact.phones[0].number),
+                        ],
+                      ),
+                      trailing: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 12),
+                          shape: const RoundedRectangleBorder(
+                            side: BorderSide(
+                              color: Colors.redAccent,
+                            ),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12.0)),
+                          ),
+                        ),
+                        child: const Text('call'),
+                        onPressed: () async {
+                          await FlutterPhoneDirectCaller.callNumber(contact.phones[0].number);
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Future<List<Contact>> _getContacts() async {
-    List<Contact> contacts = await ContactsService.getContacts();
-
+  Future<List<Contact>> getContacts() async {
+    // bool isGranted = await Permission.contacts.status.isGranted;
+    // if (!isGranted) {
+    //   isGranted = await Permission.contacts.request().isGranted;
+    // }
+    // if (isGranted) {
+    //   return await FastContacts.getAllContacts();
+    // }
+    // return [];
+    List<Contact> contacts = const [];
+    try {
+      await Permission.contacts.request();
+      contacts = await FastContacts.getAllContacts();
+      _status = 'Contacts: ${contacts.length}';
+    } on PlatformException catch (e) {
+      _status = 'Failed to get contacts:\n${e.details}';
+    }
     return contacts;
   }
 
