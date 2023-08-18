@@ -56,7 +56,7 @@ class _HospitalState extends State<Hospital> {
     super.initState();
 
     // _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
-    _myInitState();
+    // _myInitState();
     searchFocusNode = FocusNode();
   }
 
@@ -153,7 +153,7 @@ class _HospitalState extends State<Hospital> {
               SizedBox(
                 height: 500.0,
                 child: GoogleMap(
-                  mapType: MapType.normal,
+                  mapType: MapType.hybrid,
                   initialCameraPosition: _kStart,
                   onMapCreated: (GoogleMapController controller) {
                     _controller.complete(controller);
@@ -243,7 +243,7 @@ class _HospitalState extends State<Hospital> {
       );
       final GoogleMapController controller = await _controller.future;
       await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-      _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here');
+      _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here', true);
     } catch (e) {
       print(e);
     }

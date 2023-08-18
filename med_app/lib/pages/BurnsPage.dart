@@ -19,37 +19,32 @@ class BurnsPage extends StatelessWidget {
                 'Instructions on how to help someone who has a burn',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               const Text(
                 '1.Cool the burn with cold running water for at least 10 minutes.',
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(),
-              Image.asset(
-                'images/Burnsaid.png',
-                width: 200,
-                height: 500,
-                fit: BoxFit.cover,
-              ),
-              SizedBox(
+              const SizedBox(),
+              Image.asset('images/Burnsaid.png'),
+              const SizedBox(
                 height: 16,
               ),
-              Text(
+              const Text(
                 '2.Cover the burn with a clean, non-stick bandage or cloth.',
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 16,
               ),
               Image.asset('images/hand-burns.jpg'),
-              SizedBox(
+              const SizedBox(
                 height: 16,
               ),
-              Text(
+              const Text(
                 '3.Seek medical attention for severe burns.',
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 16,
               ),
               // Image.asset('assets/images/chok cyle.png')
