@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 class CprPage extends StatelessWidget {
+  const CprPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('CPR Instructions'),
+        title: const Text('CPR Instructions'),
       ),
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Column(
