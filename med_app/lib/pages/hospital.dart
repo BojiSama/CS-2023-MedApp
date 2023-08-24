@@ -56,7 +56,7 @@ class _HospitalState extends State<Hospital> {
     super.initState();
 
     // _setMarker(LatLng(0.3326, 32.5686), 'Makerere Uni');
-    // _myInitState();
+    _myInitState();
     searchFocusNode = FocusNode();
   }
 
@@ -64,6 +64,7 @@ class _HospitalState extends State<Hospital> {
     final currPos = await _determinePosition();
     _currentPostion = LatLng(currPos.latitude, currPos.longitude);
     _setMarker(_currentPostion, 'you are here', true);
+    _goToCoord(_currentPostion);
   }
 
   @override
@@ -109,10 +110,6 @@ class _HospitalState extends State<Hospital> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    // decoration: BoxDecoration(
-                    //   border: Border.all(width: 1.0),
-                    //   borderRadius: BorderRadius.circular(32.0),
-                    // ),
                     width: 300,
                     child: TextFormField(
                       focusNode: searchFocusNode,
@@ -121,9 +118,8 @@ class _HospitalState extends State<Hospital> {
                       decoration:
                           const InputDecoration(hintText: 'search by hospital'),
                       onChanged: (value) {
-                        // print(value);
                       },
-                      textInputAction: TextInputAction.search,
+                      textInputAction: TextInputAction.next,
                       onEditingComplete: searchFocusNode.nextFocus,
                     ),
                   ),
@@ -139,12 +135,10 @@ class _HospitalState extends State<Hospital> {
                       final locs = await LocationService()
                           .nearbySearchCoordinates(
                               _searchController.text, _currentPostion);
-                      searchFocusNode.nextFocus();
-                      // var logger = Logger();
                       for (int i = 0; i < locs.length; i++) {
                         _setMarker(locs[i].position, locs[i].name);
-                        // logger.d(locs[i]);
                       }
+                      _goToCoord(_currentPostion);
                     },
                     icon: const Icon(Icons.search),
                   ),
@@ -160,20 +154,29 @@ class _HospitalState extends State<Hospital> {
                   },
                   markers: _markers,
                   polylines: _polylines,
+                  // cameraTargetBounds: CameraTargetBounds(bounds),
                 ),
               ),
-              // FloatingActionButton(
-              //   onPressed: () async {
-              //     final loc = await LocationService().nextPage();
-              //     _goToCoord(loc);
-              //   },
-              // ),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: _currentPos,
-          label: const Text('Here'),
+          // onPressed: _currentPos,
+          onPressed: () async {
+            _markers.clear();
+
+            final currPos = await _determinePosition();
+            _currentPostion = LatLng(currPos.latitude, currPos.longitude);
+            _setMarker(_currentPostion, 'you are here', true);
+
+            final locs = await LocationService().nearbySearchCoordinates(
+                _searchController.text, _currentPostion);
+            for (int i = 0; i < locs.length; i++) {
+              _setMarker(locs[i].position, locs[i].name);
+            }
+            _goToCoord(_currentPostion);
+          },
+          label: const Text('Hospitals'),
           icon: const Icon(Icons.location_city),
         ),
       ),
@@ -224,11 +227,11 @@ class _HospitalState extends State<Hospital> {
   Future<void> _goToCoord(LatLng coord) async {
     CameraPosition cp = CameraPosition(
       target: LatLng(coord.latitude, coord.longitude),
-      zoom: 18.0,
+      zoom: 14.0,
     );
     final GoogleMapController controller = await _controller.future;
     await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-    _setMarker(coord, '1001');
+    // _setMarker(coord, '1001');
   }
 
   Future<void> _currentPos() async {
@@ -238,12 +241,12 @@ class _HospitalState extends State<Hospital> {
       final Position pos = await _determinePosition();
       CameraPosition cp = CameraPosition(
         target: LatLng(pos.latitude, pos.longitude),
-        zoom: 18.0,
+        zoom: 14.0,
         // tilt: 59.0,
       );
       final GoogleMapController controller = await _controller.future;
       await controller.animateCamera(CameraUpdate.newCameraPosition(cp));
-      _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here', true);
+      // _setMarker(LatLng(pos.latitude, pos.longitude), 'You are here', true);
     } catch (e) {
       print(e);
     }
